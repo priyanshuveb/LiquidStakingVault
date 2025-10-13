@@ -7,10 +7,13 @@
     3. exchangeRate = totalAssets / totalShares
     4. mulDiv math for rounding
     5. time-locked redemptions
-    5. withdraw burn shares and mint withdraw nft containing assets owned and availableAt = now() + unbondingPeriod
+    5. withdraw burn shares and mint withdraw nft containing assets owned and availableAt = now() + unbondingPeriod to claim assets
 
 - GovernanceRootPublisher
-    1. 
+    1. create proposal
+    2. snapshot excahnge rate
+    3. snapshot block
+    4. 
 
 
 ### Flow

@@ -133,6 +133,7 @@ contract LiquidStakingVault is ReentrancyGuard, ERC20 {
         return IERC20(asset()).balanceOf(address(this));
     }
 
+    // Look into this math again
     function exchangeRate() public view returns (uint256) {
         (bool success, uint256 rate)  = (totalAssets() + 1).tryDiv(totalSupply() + 10 ** _decimalsOffset());
         return success ? rate : 0;
