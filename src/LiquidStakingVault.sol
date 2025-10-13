@@ -103,7 +103,7 @@ contract LiquidStakingVault is ReentrancyGuard, ERC20 {
     function distributeRewards(uint256 amount) external onlyAdmin nonReentrant {
   
         // _asset.safeTransferFrom(msg.sender, address(this), amount);
-        SafeERC20.safeTransfer(_asset, address(this), amount);
+        SafeERC20.safeTransferFrom(_asset, msg.sender, address(this), amount);
         emit RewardsDistributed(msg.sender, amount);
     }
 
