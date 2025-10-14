@@ -3,8 +3,7 @@ pragma solidity ^0.8.20;
 
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
-interface IVaultLike {
-    /// @return 1e18-scaled, floored exchange rate = totalAssets / totalShares (or 1e18 if no shares)
+interface IVault {
     function exchangeRate() external view returns (uint256);
 }
 
@@ -13,8 +12,9 @@ contract GovernanceRootPublisher is Ownable(msg.sender) {
         bytes32 actionDataHash;   // keccak256(abi.encode(target, callData))
         uint64  votingStart;      // unix seconds
         uint64  votingEnd;        // unix seconds
-        uint64  snapshotBlock;    // L1/L2 block height for balance reads
+        uint64  snapshotBlock;    
         uint256 snapshotER;       // 1e18 scaled ER captured at creation
+        uint256 deadline;         // deadline to vote and execute the proposal
 
         // reserved for later phases (root freezing)
         bytes32 powerRoot;
@@ -24,8 +24,12 @@ contract GovernanceRootPublisher is Ownable(msg.sender) {
         bool    rootFrozen;
     }
 
-    IVaultLike public immutable vault;
+    IVault public immutable vault;
+
     uint256 public proposalCount;
+
+    uint256 constant public buffer = 2 days; // buffer time to execute the proposal after the voting ends
+
     mapping(uint256 => Proposal) public proposals;
 
     event ProposalCreated(
@@ -37,21 +41,24 @@ contract GovernanceRootPublisher is Ownable(msg.sender) {
         uint256 snapshotER
     );
 
+    error NoProposal();
+    error InvalidActionData();
+    error InvalidVotingPeriod();
+    error InvalidVaultAddress();
+
     constructor(address vault_) {
-        require(vault_ != address(0), "vault=0");
-        vault = IVaultLike(vault_);
+        require(vault_ != address(0), InvalidVaultAddress());
+        vault = IVault(vault_);
     }
 
-    /// @notice Create a proposal and snapshot block+ER in one atomic step.
-    /// @dev Keep window sane; you can relax constraints for tests.
     function createProposal(
         bytes32 actionDataHash,
         uint64 votingStart,
         uint64 votingEnd
     ) external onlyOwner returns (uint256 id) {
-        require(actionDataHash != bytes32(0), "hash=0");
-        require(votingStart < votingEnd, "window");
-        require(votingStart >= block.timestamp, "start<present");
+        require(actionDataHash != bytes32(0), InvalidActionData());
+        require(votingStart < votingEnd, InvalidVotingPeriod());
+        require(votingStart >= block.timestamp, InvalidVotingPeriod());
 
         id = ++proposalCount;
 
@@ -61,6 +68,7 @@ contract GovernanceRootPublisher is Ownable(msg.sender) {
             votingEnd: votingEnd,
             snapshotBlock: uint64(block.number),
             snapshotER: vault.exchangeRate(),
+            deadline: votingEnd + buffer,
             powerRoot: bytes32(0),
             totalPower: 0,
             quorum: 0,
@@ -85,7 +93,7 @@ contract GovernanceRootPublisher is Ownable(msg.sender) {
         returns (uint64 snapshotBlock, uint256 snapshotER)
     {
         Proposal storage p = proposals[id];
-        require(p.snapshotBlock != 0, "no-proposal");
+        require(p.snapshotBlock != 0, NoProposal());
         return (p.snapshotBlock, p.snapshotER);
     }
 
@@ -95,7 +103,14 @@ contract GovernanceRootPublisher is Ownable(msg.sender) {
         returns (uint64 votingStart, uint64 votingEnd)
     {
         Proposal storage p = proposals[id];
-        require(p.snapshotBlock != 0, "no-proposal");
+        require(p.snapshotBlock != 0, NoProposal());
         return (p.votingStart, p.votingEnd);
     }
-}
+
+    function getDeadline(uint256 id) external view retuens(uint256){
+        Proposal memory p = proposals[id];
+        require(p.deadline != 0, NoProposal());
+        return p.deadline;
+
+    }
+} 

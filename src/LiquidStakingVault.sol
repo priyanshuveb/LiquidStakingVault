@@ -1,11 +1,6 @@
 // SPDX-License-Identifier: MIT 
 pragma solidity ^0.8.20;
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-// import {ERC4626} from "@openzeppelin/contracts/token/ERC20/extensions/ERC4626.sol";
-// import {ERC721} from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
-// import {IERC721} from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
-// import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {ERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
@@ -13,12 +8,12 @@ import {IWithdrawalNFT} from "./Interfaces/IWithdrawalNFT.sol";
 
 contract LiquidStakingVault is ReentrancyGuard, ERC20 {
 
-    // using SafeERC20 for IERC20;
     using Math for uint256;
 
     // ---------- Governor Executor as admin ----------
     address private _admin;
     uint256 public unbondingPeriod;
+    uint256 public constant ER_SCALE = 1e18;
     
     IERC20 private immutable _asset;
     IWithdrawalNFT private immutable _nft;
@@ -133,10 +128,10 @@ contract LiquidStakingVault is ReentrancyGuard, ERC20 {
         return IERC20(asset()).balanceOf(address(this));
     }
 
-    // Look into this math again
-    function exchangeRate() public view returns (uint256) {
-        (bool success, uint256 rate)  = (totalAssets() + 1).tryDiv(totalSupply() + 10 ** _decimalsOffset());
-        return success ? rate : 0;
+    // Scaled by 1e18
+    function exchangeRate() public view returns (uint256) {    
+        (bool success, uint256 rate) = totalAssets().mulDiv(ER_SCALE, totalSupply(), Math.Rounding.Floor);
+        return success ? rate : ER_SCALE;
     }
 
     function maxWithdraw(address owner) public view returns (uint256) {

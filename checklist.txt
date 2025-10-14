@@ -1,0 +1,15 @@
+exchange rate +
+deadline fetch from onchain +
+nonce fetch onchain +
+power fetch at time signing +
+governor executor 
+relayer
+test cases
+gas efficient
+remove comments/logs
+update owner for governor contracts/ Vaults
+events
+errors custom
+
+
+
