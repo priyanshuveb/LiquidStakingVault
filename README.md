@@ -1,4 +1,4 @@
-# Senior EVM Challenge — Contracts
+# LiquidStaking with Cross Chain Governance (Off Chain Voting) Contracts
 
 This repo contains the **on-chain contracts** for the “Liquid Staking + Off-Chain Voting + Cross-Chain Execution” system.  
 It is split across two logical chains:
