@@ -63,7 +63,7 @@ contract GovernanceRootPublisher is Ownable(msg.sender) {
         bytes32 actionDataHash,
         uint64 votingStart,
         uint64 votingEnd
-    ) external onlyOwner returns (uint256 id) {
+    ) external returns (uint256 id) {
         require(actionDataHash != bytes32(0), InvalidActionData());
         require(votingStart < votingEnd, InvalidVotingPeriod());
         require(votingStart >= block.timestamp, InvalidVotingPeriod());
