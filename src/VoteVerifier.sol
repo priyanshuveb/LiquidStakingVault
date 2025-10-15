@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.20;
+pragma solidity ^0.8.26;
 
 import {EIP712} from "@openzeppelin/contracts/utils/cryptography/EIP712.sol";
 import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import {MerkleProof} from "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
-contract VoteVerifier is EIP712, Ownable {
+contract VoteVerifier is EIP712, Ownable(msg.sender) {
    
     bytes32 public constant VOTE_TYPEHASH =
         keccak256("Vote(uint256 proposalId,bool support,address voter,uint256 power,uint256 nonce,uint256 deadline)");
@@ -43,7 +43,6 @@ contract VoteVerifier is EIP712, Ownable {
     error DupVoter();
     error InvalidVote();
 
-    /// @notice Called by your relayer after Chain A's GovernanceRootPublisher.freezeRoot().
     function freezeProposal(
         uint256 proposalId,
         bytes32 powerRoot,

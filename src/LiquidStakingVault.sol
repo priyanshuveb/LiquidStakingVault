@@ -16,7 +16,7 @@ contract LiquidStakingVault is ReentrancyGuard, ERC20 {
     uint256 public constant ER_SCALE = 1e18;
     
     IERC20 private immutable _asset;
-    IWithdrawalNFT private immutable _nft;
+    IWithdrawalNFT private _nft;
 
 
     // ---------- Events / Errors ----------
@@ -28,6 +28,7 @@ contract LiquidStakingVault is ReentrancyGuard, ERC20 {
     error ExceededMaxWithdraw(address owner, uint256 requested, uint256 max);
     error NotUnlocked(uint256 currentTime, uint256 availableAt);
     error NotAdmin(address account);
+    error NFTAlreadySet();
 
     modifier onlyAdmin() {
         if (msg.sender != _admin) {
@@ -37,11 +38,10 @@ contract LiquidStakingVault is ReentrancyGuard, ERC20 {
     }
 
     // ---------- Constructor ----------
-    constructor(address admin_, IERC20 asset_, uint256 unbondingPeriod_, IWithdrawalNFT nft_) ERC20("LST Shares", "LSTS") {
+    constructor(address admin_, IERC20 asset_, uint256 unbondingPeriod_) ERC20("LST Shares", "LSTS") {
         _admin = admin_;
         _asset = asset_;
         unbondingPeriod = unbondingPeriod_;
-        _nft = nft_;
     }
 
     // ---------- CORE VALUT LOGICS ----------
@@ -94,6 +94,11 @@ contract LiquidStakingVault is ReentrancyGuard, ERC20 {
 
     // ---------- ADMIN FUNCTIONS ----------
 
+    function setNFT(address nft_) external onlyAdmin {
+        require(address(_nft) == address(0), NFTAlreadySet());
+        _nft = IWithdrawalNFT(nft_);
+    }
+
     // Push rewards without minting shares → ER increases.
     function distributeRewards(uint256 amount) external onlyAdmin nonReentrant {
   
@@ -130,8 +135,8 @@ contract LiquidStakingVault is ReentrancyGuard, ERC20 {
 
     // Scaled by 1e18
     function exchangeRate() public view returns (uint256) {    
-        (bool success, uint256 rate) = totalAssets().mulDiv(ER_SCALE, totalSupply(), Math.Rounding.Floor);
-        return success ? rate : ER_SCALE;
+        uint256 rate = (totalAssets()+1).mulDiv(ER_SCALE, totalSupply()+1 , Math.Rounding.Floor);
+        return rate;
     }
 
     function maxWithdraw(address owner) public view returns (uint256) {
