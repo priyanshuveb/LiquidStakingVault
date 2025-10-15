@@ -40,8 +40,16 @@ contract GovernanceRootPublisher is Ownable(msg.sender) {
         uint64 snapshotBlock,
         uint256 snapshotER
     );
+    event RootPublished(
+        uint256 indexed proposalId,
+        bytes32 indexed powerRoot,
+        uint256 totalPower,
+        uint256 quorum,
+        uint256 threshold
+    );
 
     error NoProposal();
+    error RootAlreadyPublished();
     error InvalidActionData();
     error InvalidVotingPeriod();
     error InvalidVaultAddress();
@@ -86,6 +94,26 @@ contract GovernanceRootPublisher is Ownable(msg.sender) {
         );
     }
 
+    function publishRoot(
+        uint256 proposalId,
+        bytes32 powerRoot,
+        uint256 totalPower,
+        uint256 quorum,
+        uint256 threshold
+    ) external onlyOwner {
+        Proposal storage p = proposals[proposalId];
+        require(p.snapshotBlock != 0, NoProposal());
+        require(!p.rootFrozen, RootAlreadyPublished());
+
+        p.powerRoot = powerRoot;
+        p.totalPower = totalPower;
+        p.quorum = quorum;
+        p.threshold = threshold;
+        p.rootFrozen = true;
+
+        emit RootPublished(proposalId, powerRoot, totalPower, quorum, threshold);
+    }
+
     // ---------- Views that make off-chain life easy ----------
     function getSnapshot(uint256 id)
         external
@@ -107,7 +135,7 @@ contract GovernanceRootPublisher is Ownable(msg.sender) {
         return (p.votingStart, p.votingEnd);
     }
 
-    function getDeadline(uint256 id) external view retuens(uint256){
+    function getDeadline(uint256 id) external view returns(uint256){
         Proposal memory p = proposals[id];
         require(p.deadline != 0, NoProposal());
         return p.deadline;
